@@ -3,6 +3,8 @@
 #include <cassert>
 #include <sstream>
 #include <vector>
+#include <stdexcept>
+
 
 
 /* 
@@ -483,9 +485,11 @@ int RBST::rank(int x) {
 
 int RBST::select(int r) {
     // Given rank must be in range
-    assert(r >= 1);
+    if (r < 1 || r > root->size) {
+        throw std::out_of_range("Invalid index " + std::to_string(r) + 
+        ". Extent is 1.." + std::to_string(root->size));
+    }
     assert(root != nullptr);
-    assert(r <= root->size);
     int cr = (root->lc != nullptr)? root->lc->size + 1 : 1;
     TreeNode* n = root; // Start at top
     while (cr != r) {
@@ -507,20 +511,25 @@ int RBST::prefixSumSubtree(TreeNode* n, int j) {
         return 0;
     if (n->lc == nullptr && n->rc == nullptr)
         return n->val;
-    int ls = (n->lc != nullptr) ? n->lc->size : 0;
+    int lsize = (n->lc != nullptr) ? n->lc->size : 0;
+    int lsum  = (n->lc != nullptr) ? n->lc->sum : 0;
     // In each case, subtree height reduces 1 step
-    if (ls > j-1)   // Move left
+    if (lsize > j-1)   // Move left
         return prefixSumSubtree(n->lc, j);
-    else if (ls + 1 == j)
-        return n->val + n->lc->sum;
+    else if (lsize + 1 == j)
+        return n->val + lsum;
     else            // Move right
-        return n->val + n->lc->sum + 
-            prefixSumSubtree(n->rc, j - 1 - n->lc->size);
+        return n->val + lsum +  prefixSumSubtree(n->rc, j-1-lsize);
 }
 
 int RBST::rangeSum(int i, int j) {
-    assert(1 <= i && i <= root->size);
-    assert(1 <= j && j <= root->size);
+    if (i < 1 || i > root->size) {
+        throw std::out_of_range("Invalid start index " + std::to_string(i) + 
+        ". Extent is 1.." + std::to_string(root->size));
+    } else if (j < 1 || j > root->size) {
+        throw std::out_of_range("Invalid end index " + std::to_string(j) + 
+        ". Extent is 1.." + std::to_string(root->size));
+    }
     // Prefixsum takes O(lg n) time, this is the same
     if (i==1) {
         return prefixSumSubtree(root, j);

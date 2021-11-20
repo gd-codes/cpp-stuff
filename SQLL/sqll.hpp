@@ -182,7 +182,7 @@ void LinkedList::clear() {
 }
 
 void LinkedList::print(const std::string& sep=" ", 
-                       const std::string& fin="|\n", 
+                       const std::string& fin="\n", 
                        std::ostream& stream = std::cout) {
     ListNode* n = start;
     while (n != nullptr) {
