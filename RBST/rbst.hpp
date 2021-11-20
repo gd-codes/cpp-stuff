@@ -1,12 +1,8 @@
-/* CS202 Data Structures and Algorithms
-Assignment 5 : Solution by group 25 */
 
 #include <stack>
 #include <cassert>
 #include <sstream>
 #include <vector>
-
-#include <iostream>
 
 
 /* 
@@ -40,13 +36,18 @@ class TreeNode {
         TreeNode* rc = nullptr;
 
     friend class RBST;
-    friend bool isNull(TreeNode*);
 
     public :
         TreeNode() {}
         TreeNode(int x, bool r=false) : val(x), red(r), sum(x) {}
 
 };
+
+// Is the Tree node a null leaf ? 
+// (or meant to be one, during intermediate deletion procedures)
+#define isNull(t) (t==nullptr || (t->doubleblack && t->red))
+
+typedef std::vector<TreeNode*>::iterator vi;
 
 
 
@@ -78,11 +79,7 @@ class RBST {
 
 
 
-typedef std::vector<TreeNode*>::iterator vi;
 
-inline bool isNull(TreeNode* t) {
-    return (t==nullptr || (t->doubleblack && t->red));
-}
 
 
 RBST::~RBST() {
@@ -183,6 +180,7 @@ void RBST::rightRotate(TreeNode* node, TreeNode* parent) {
 
 void RBST::printSubtree(std::ostringstream& out, 
         const std::string& pref, const TreeNode* node, bool l) {
+    // Modified version of https://stackoverflow.com/a/51730733
 
     out << pref << (l ? "\u251c\u2500\u2500" : "\u2514\u2500\u2500" );
     if( node != nullptr ) {
@@ -193,7 +191,7 @@ void RBST::printSubtree(std::ostringstream& out,
         printSubtree(out, pref+(l? "\u2502   ":"    "), node->lc, true);
         printSubtree(out, pref+(l? "\u2502   ":"    "), node->rc, false);
     } else {
-        out << "\u257a\n";
+        out << "\u257a\n"; // Null leaves printed as "dots"
     }
 }
 
@@ -529,93 +527,5 @@ int RBST::rangeSum(int i, int j) {
     } else {
         return prefixSumSubtree(root, j) - prefixSumSubtree(root, i-1);
     }
-}
-
-
-int main() {
-    RBST tree;
-    std::cout << "Before\n" << tree.print();
-    tree.insert(10);
-    std::cout << "Inserted 10\n" << tree.print();
-    tree.insert(5);
-    std::cout << "Inserted 5\n" << tree.print();
-    tree.insert(5);
-    std::cout << "Inserted 5\n" << tree.print();
-    tree.insert(4);
-    std::cout << "Inserted 4\n" << tree.print();
-    tree.insert(2);
-    std::cout << "Inserted 2\n" << tree.print();
-    tree.insert(3);
-    std::cout << "Inserted 3\n" << tree.print();
-    tree.insert(15);
-    std::cout << "Inserted 15\n" << tree.print();
-    tree.insert(12);
-    std::cout << "Inserted 12\n" << tree.print();
-    tree.insert(13);
-    std::cout << "Inserted 13\n" << tree.print();
-    tree.remove(10);
-    std::cout << "\nDeleted 10\n" << tree.print();
-    tree.remove(5);
-    std::cout << "Deleted 27\n" << tree.print();
-    tree.remove(5);
-    std::cout << "Deleted 5\n" << tree.print();
-    tree.remove(15);
-    std::cout << "Deleted 15\n" << tree.print();
-    tree.remove(3);
-    std::cout << "Deleted 3\n" << tree.print();
-    tree.remove(13);
-    std::cout << "Deleted 13\n" << tree.print();
-    tree.remove(2);
-    std::cout << "Deleted 2\n" << tree.print();
-
-    int opt=1, x, y;
-    do {
-        std::cout << "Operations :\n[0] Exit\t[1] Print\t[2] Insert\t"  << 
-            "[3] Delete\t[4] Rank\t[5] Select\t[6] RangeSum\nSelect choice - ";
-        std::cin >> opt;
-        switch (opt) {
-            case 1:
-                std::cout << tree.print(); break;
-            case 2:
-                std::cout << "Element to insert> "; std::cin >> x; 
-                std::cout << ((tree.insert(x))?"Ok":"Duplicate") << "\n" << tree.print();
-                break;
-            case 3:
-                std::cout << "Element to remove> "; std::cin >> x; 
-                std::cout << (tree.remove(x)?"Ok":"Not found") << "\n" << tree.print();
-                break;
-            case 4:
-                std::cout << "Element to search> "; std::cin >> x;
-                std::cout << tree.rank(x) << "\n";
-                break;
-            case 5:
-                std::cout << "Rank to get> "; std::cin >> x;
-                if (x >= 1 && x <= tree.size())
-                    std::cout << tree.select(x) << "\n";
-                else 
-                    std::cout << "Invalid\n";
-                break;
-            case 6:
-                std::cout << "Lower & upper bounds> "; std::cin >> x >> y;
-                if (x >= 1 && x <= tree.size() && y >= 1 && y <= tree.size())
-                    std::cout << tree.rangeSum(x, y) << "\n";
-                else 
-                    std::cout << "Invalid\n";
-                break;
-        }
-    } while (opt != 0);
-    return 0;
-    /* 
-    NOTE : The print format is   [value] size, sum
-                                    ├── Left child
-                                    └── Right child
-         Null nodes represented with a dot
-
-         Red nodes are coloured red using terminal ANSI escape codes
-         if your command prompt doesnt render this properly,
-         you may see some letters like ^[[e91m etc..
-     */
-    /* NOTE :   Select function returns 0 if not found, 1..n otherwise
-     */
 }
 

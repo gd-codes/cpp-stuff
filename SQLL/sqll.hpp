@@ -1,3 +1,4 @@
+
 #include <initializer_list>
 #include <algorithm>
 #include <stdexcept>
@@ -28,6 +29,21 @@ struct ListNode {
         
         operator int() const {return val;}
 };
+/* 
+Assigning an int to the node with operator= sets its value
+Copy & move using operator= use compiler-generated functions
+
+The node can be implicitly converted to its `int` value
+
+This way, using operator[] on the linked list returns the node,
+which you can read/write as int (its value),
+but also continue traversing the list using the same returned reference
+if necessary, by calling .nxt() on it.
+
+Afterthought : This seems complicated and unnecessary now
+operator[] on the linked list should just directly return the node's value
+and some kind of iterator for traversal separately.
+ */
 
 
 
@@ -180,7 +196,7 @@ void LinkedList::print(const std::string& sep=" ",
 
 
 
-
+/* Stack and Queue, based on the Linkedlist */
 
 class Stack : private LinkedList {
     
