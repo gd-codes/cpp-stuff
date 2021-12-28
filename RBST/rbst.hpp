@@ -32,8 +32,6 @@ class TreeNode {
         int sum;
         int size = 1;
 
-        bool doubleblack = false;
-
         TreeNode* lc = nullptr;
         TreeNode* rc = nullptr;
 
@@ -47,7 +45,7 @@ class TreeNode {
 
 // Is the Tree node a null leaf ? 
 // (or meant to be one, during intermediate deletion procedures)
-#define isNull(t) (t==nullptr || (t->doubleblack && t->red))
+#define isNull(t) (t == nullptr || (t == doubleblack && t->red))
 
 typedef std::vector<TreeNode*>::iterator vi;
 
@@ -66,6 +64,11 @@ class RBST {
     void maintainRBT_del(std::vector<TreeNode*>&);
     int prefixSumSubtree(TreeNode*, int);
 
+    // There is atmost just 1 temporary doubleblack node at any time
+    TreeNode* doubleblack = nullptr;
+    // Node returned by the traversal iterator after the end
+    TreeNode* endnode = new TreeNode;
+
     public :
         bool insert(int);
         bool remove(int);
@@ -77,6 +80,10 @@ class RBST {
         ~RBST();
         std::string print();
         int size() {return (root != nullptr)? root->size : 0;}
+
+        class InOrderTraverser;
+        InOrderTraverser begin() const;
+        InOrderTraverser end() const;
 };
 
 
@@ -93,14 +100,16 @@ RBST::~RBST() {
         // In-order traversal so that node's children dont need to be
         // accessed after it is deleted (a node is popped only once)
         while (!iot.empty()) {
-            iot.push(curr);
-            curr = curr->lc;
-            if (curr==nullptr) {
+            if (curr != nullptr) {
+                iot.push(curr);
+                curr = curr->lc;
+            } else {
                 curr = iot.top(); iot.pop();
                 temp = curr->rc; delete curr; curr = temp;
             }
         }
     }
+    delete endnode;
 }
 
 
@@ -182,7 +191,7 @@ void RBST::rightRotate(TreeNode* node, TreeNode* parent) {
 
 void RBST::printSubtree(std::ostringstream& out, 
         const std::string& pref, const TreeNode* node, bool l) {
-    // Modified version of https://stackoverflow.com/a/51730733
+    // This code block is a Modified version of https://stackoverflow.com/a/51730733
 
     out << pref << (l ? "\u251c\u2500\u2500" : "\u2514\u2500\u2500" );
     if( node != nullptr ) {
@@ -372,7 +381,7 @@ bool RBST::remove(int x) {
     } else {
         // The (only) complex case - black leaf node
         assert(t->lc==nullptr && t->rc==nullptr);
-        t->doubleblack = true;
+        doubleblack = t;
         t->red = true;
         /* NOTE : Since we are using `nullptr` to denote NULL leaves, 
                 It isn't possible to store additonal info like "double black"
@@ -388,9 +397,9 @@ bool RBST::remove(int x) {
 void RBST::maintainRBT_del(std::vector<TreeNode*>& ancestry) {
     // The last node is always double black, when called
     TreeNode *u = ancestry.back();
-    assert(u->doubleblack);
+    assert(u == doubleblack);
     if (u==root) {  // Case 3
-        u->doubleblack = false;
+        doubleblack = nullptr;
         return;
     }
     assert(ancestry.size() > 1);
@@ -422,12 +431,12 @@ void RBST::maintainRBT_del(std::vector<TreeNode*>& ancestry) {
             p->red = true; g->red = false;
         } else {        // Case 2.1.1
             p->red = true;
-            g->doubleblack = true;
+            doubleblack = g;
             ancestry.pop_back();
             maintainRBT_del(ancestry);
         }
         if (! u->red)
-            u->doubleblack = false;
+            doubleblack = nullptr;
         else {
             if (side) g->lc = nullptr;
             else g->rc = nullptr;
@@ -451,7 +460,7 @@ void RBST::maintainRBT_del(std::vector<TreeNode*>& ancestry) {
         else 
             rightRotate(g, a);
         if (! u->red)
-            u->doubleblack = false;
+            doubleblack = nullptr;
         else {
             if (side) g->lc = nullptr;
             else g->rc = nullptr;
@@ -538,3 +547,95 @@ int RBST::rangeSum(int i, int j) {
     }
 }
 
+
+
+/* 
+Similar to an Input iterator, allows reading the values of all nodes
+in the tree sequentially in ascending order, with approxiamtely O(N)
+complexity overall. The iterator maintains a stack (auxiliary O(lg N) space)
+to do this internally. Otherwise, alternative would be to call
+RBST::select(1), RBST::select(2), ... RBST::select(N) where each individual
+call takes O(lg N) complexity because they are stateless/independent
+
+Modifying the tree (insertion/deletion) in-between traversal will likely break 
+any/all of these iterators that are being used meanwhile
+ */
+class RBST::InOrderTraverser {
+            
+    TreeNode* n;
+    std::stack<TreeNode*> stk;
+    TreeNode* en;
+    void send_to_end() {n = en;}
+
+    friend bool operator==(const InOrderTraverser& a,
+                            const InOrderTraverser& b);
+    friend bool operator!=(const InOrderTraverser& a,
+                            const InOrderTraverser& b);
+    friend class RBST;
+    public :
+        InOrderTraverser(const RBST& tree);
+        int& operator*() const {return n->val;}
+        InOrderTraverser& operator++();
+        InOrderTraverser  operator++(int) {
+            InOrderTraverser copy(*this); ++(*this); return copy;
+        };
+};
+
+
+RBST::InOrderTraverser::InOrderTraverser(const RBST& tree) {
+    en = tree.endnode;
+    if (tree.root == nullptr) {
+        n = tree.endnode;
+    } else {
+        n = tree.root; 
+        stk.push(n);
+        while (n->lc != nullptr) {
+            n = n->lc;
+            stk.push(n);
+        }
+    }
+}
+
+RBST::InOrderTraverser& RBST::InOrderTraverser::operator++() {
+    n = n->rc;
+    if (n != nullptr) {
+        stk.pop();
+        stk.push(n);
+    }
+    while (!stk.empty()) {
+        if (n != nullptr) {
+            n = n->lc; stk.push(n); 
+        } else {
+            stk.pop(); 
+            if (!stk.empty())
+                n = stk.top();
+            else 
+                n = en;
+            return *this; 
+        }
+    }
+    return *this;
+}
+
+inline bool operator==(const RBST::InOrderTraverser& a, 
+                       const RBST::InOrderTraverser& b) {
+    return a.n == b.n;
+}
+
+inline bool operator!=(const RBST::InOrderTraverser& a, 
+                       const RBST::InOrderTraverser& b) {
+    return a.n != b.n;
+}
+
+
+
+RBST::InOrderTraverser RBST::begin() const {
+    InOrderTraverser iot(*this);
+    return iot;
+}
+
+RBST::InOrderTraverser RBST::end() const {
+    InOrderTraverser iot(*this);
+    iot.send_to_end();
+    return iot;
+}

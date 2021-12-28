@@ -70,8 +70,8 @@ int main() {
     int opt=1, x, y;
     do {
         #ifndef MINIMAL_OUTPUT
-            std::cout << "Operations :\n[0] Exit\t[1] Print\t[2] Insert\t"  << 
-                "[3] Delete\t[4] Rank\t[5] Select\t[6] RangeSum\nSelect choice - ";
+            std::cout << "Operations :\n[0] Exit\t[1] Print\t[2] Insert\t[3] Delete\t"  << 
+            "[4] Rank\t[5] Select\t[6] RangeSum\t[7] Get Size\t[8] Traverse\nSelect choice - ";
         #endif
         std::cin >> opt;
         switch (opt) {
@@ -83,7 +83,7 @@ int main() {
                 #endif
                 std::cin >> x;
                 #ifndef MINIMAL_OUTPUT
-                    std::cout << (tree.insert(x)?"Ok":"Duplicate") << "\n" << tree.print();
+                    std::cout << (tree.insert(x)?"Ok":"Duplicate") << '\n' << tree.print();
                 #else
                     tree.insert(x);
                 #endif
@@ -94,7 +94,7 @@ int main() {
                 #endif
                 std::cin >> x;
                 #ifndef MINIMAL_OUTPUT
-                    std::cout << (tree.remove(x)?"Ok":"Not found") << "\n" << tree.print();
+                    std::cout << (tree.remove(x)?"Ok":"Not found") << '\n' << tree.print();
                 #else
                     tree.remove(x);
                 #endif
@@ -104,7 +104,7 @@ int main() {
                     std::cout << "Element to search> ";
                 #endif
                 std::cin >> x;
-                std::cout << tree.rank(x) << "\n";
+                std::cout << tree.rank(x) << '\n';
                 break;
             case 5:
                 #ifndef MINIMAL_OUTPUT
@@ -112,7 +112,7 @@ int main() {
                 #endif
                 std::cin >> x;
                 try {
-                    std::cout << tree.select(x) << "\n";
+                    std::cout << tree.select(x) << '\n';
                 } catch (const std::exception& e) {
                     std::cerr << e.what() << std::endl;
                 }
@@ -123,9 +123,18 @@ int main() {
                 #endif
                 std::cin >> x >> y;
                 try {
-                    std::cout << tree.rangeSum(x, y) << "\n";
+                    std::cout << tree.rangeSum(x, y) << '\n';
                 } catch (const std::exception& e) { 
                     std::cerr << e.what() << std::endl;
+                }
+                break;
+            case 7:
+                std::cout << tree.size() << '\n';
+                break;
+            case 8:
+                RBST::InOrderTraverser en = tree.end();
+                for (RBST::InOrderTraverser it = tree.begin(); it != en; ++it) {
+                    std::cout << *it << '\n';
                 }
                 break;
         }
